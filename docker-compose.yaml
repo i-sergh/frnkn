@@ -273,7 +273,7 @@ services:
       - webapp
       - server
 ##
-# my bullsh*t
+# my realisation
 ##
   # level of services
   nifi_docker:
