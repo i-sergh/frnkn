@@ -409,7 +409,6 @@ services:
       - KAFKA_CONNECT_URIS=http://connect:8083
     networks:
       - ui-network
-
 #####
 #END services 
 #####
