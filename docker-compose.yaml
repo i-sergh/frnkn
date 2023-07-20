@@ -398,7 +398,7 @@ services:
     networks:
       - ui-network
 # UI
-  debezium-u1: # ложится на ubuntu 20.04
+  debezium-u1: # ложится на ubuntu 20.04 Причина в ddl
     image: quay.io/debezium/debezium-ui:2.4
     container_name: debezium-ui
     ports:
