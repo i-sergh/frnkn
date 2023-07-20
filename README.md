@@ -65,14 +65,14 @@ git clone https://github.com/i-sergh/frnkn.git
 ```
 cd frknn
 rm README.md
-rm -r .git
+sudo rm -r .git
 ```
 
 <br>
 
 Скопировать файлы в папку проекта
 ```
-cp -r * ../aibyte
+cp -r * ../airbyte
 ```
 
 <br><br><br>
