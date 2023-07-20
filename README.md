@@ -50,7 +50,7 @@
 ```
 cd ..
 
-git clone https://github.com/i-sergh/frnkn/tree/master.git
+git clone https://github.com/i-sergh/frnkn.git
 ```
 
 > В текущей дирректории должно быть две папки `./airbyte` и `./frnkn`
