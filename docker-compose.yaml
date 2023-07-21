@@ -335,7 +335,7 @@ services:
       - MYSQL_PASSWORD=mysqlpw                  #
     networks:                                   #
       debezium_network: # 172.16.4.x            #
-        ipv4_address: 172.16.4.2                #
+        ipv4_address: 172.16.4.6                #
   mysqlterm: # тут подключаемся к базе          #
     image: mysql:8.0                            #
     container_name: mysqlterm                   #
@@ -347,7 +347,7 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=True         #
     networks:                                   #
       debezium_network: # 172.16.4.x            #
-        ipv4_address: 172.16.4.2                #
+        ipv4_address: 172.16.4.7                #
   zookeeper:
     container_name: zookeeper
     image: quay.io/debezium/zookeeper:2.4
