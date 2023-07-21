@@ -324,6 +324,30 @@ services:
 #debezium
 ##
   # level of services
+  mysql: # тут лежит база                       #
+    image: quay.io/debezium/example-mysql:2.4   # Не обязательные контейнеры 
+    container_name: mysql                       # Просто для проверки работоспособности
+    ports:                                      #
+      - "3306:3306"                             #
+    environment:                                #
+      - MYSQL_ROOT_PASSWORD=debezium            #
+      - MYSQL_USER=mysqluser                    # 
+      - MYSQL_PASSWORD=mysqlpw                  #
+    networks:                                   #
+      debezium_network: # 172.16.4.x            #
+        ipv4_address: 172.16.4.2                #
+  mysqlterm: # тут подключаемся к базе          #
+    image: mysql:8.0                            #
+    container_name: mysqlterm                   #
+    depends_on:                                 #
+      - mysql                                   #
+    links:                                      #
+      - mysql:mysql                             #
+    environment:                                #
+      - MYSQL_ALLOW_EMPTY_PASSWORD=True         #
+    networks:                                   #
+      debezium_network: # 172.16.4.x            #
+        ipv4_address: 172.16.4.2                #
   zookeeper:
     container_name: zookeeper
     image: quay.io/debezium/zookeeper:2.4
