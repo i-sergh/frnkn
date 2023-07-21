@@ -30,11 +30,11 @@ services:
       - LOG_LEVEL=${LOG_LEVEL}
       - LOCAL_CONNECTOR_CATALOG_PATH=${LOCAL_CONNECTOR_CATALOG_PATH}
     networks:
-      - airbyte_internal
+      - airbyte_internal # 172.16.2.x
     depends_on:
       init:
         condition: service_completed_successfully
-  db:
+  db: 
     image: airbyte/db:${VERSION}
     logging: *default-logging
     container_name: airbyte-db
@@ -51,7 +51,7 @@ services:
     volumes:
       - db:/var/lib/postgresql/data
     networks:
-      - airbyte_internal
+      - airbyte_internal # 172.16.2.x
   worker:
     image: airbyte/worker:${VERSION}
     logging: *default-logging
@@ -122,7 +122,7 @@ services:
     ports:
       - "9000"
     networks:
-      - airbyte_internal
+      - airbyte_internal # 172.16.2.x
     depends_on:
       bootloader:
         condition: service_completed_successfully
@@ -173,7 +173,7 @@ services:
       - data:${CONFIG_ROOT}
       - ${LOCAL_ROOT}:${LOCAL_ROOT}
     networks:
-      - airbyte_internal
+      - airbyte_internal # 172.16.2.x
     depends_on:
       bootloader:
         condition: service_completed_successfully
@@ -189,7 +189,7 @@ services:
       - CONNECTOR_BUILDER_API_HOST=${CONNECTOR_BUILDER_API_HOST}
       - TRACKING_STRATEGY=${TRACKING_STRATEGY}
     networks:
-      - airbyte_internal
+      - airbyte_internal # 172.16.2.x
     depends_on:
       bootloader:
         condition: service_completed_successfully
@@ -209,7 +209,7 @@ services:
     volumes:
       - ./temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
     networks:
-      - airbyte_internal
+      - airbyte_internal # 172.16.2.x
   airbyte-cron:
     image: airbyte/cron:${VERSION}
     logging: *default-logging
@@ -233,7 +233,7 @@ services:
     volumes:
       - workspace:${WORKSPACE_ROOT}
     networks:
-      - airbyte_internal
+      - airbyte_internal # 172.16.2.x
     depends_on:
       bootloader:
         condition: service_completed_successfully
@@ -250,7 +250,7 @@ services:
       - DEPLOYMENT_MODE=${DEPLOYMENT_MODE}
       - PYTHON_VERSION=${PYTHON_VERSION}
     networks:
-      - airbyte_internal
+      - airbyte_internal # 172.16.2.x
     depends_on:
       bootloader:
         condition: service_completed_successfully
@@ -267,13 +267,14 @@ services:
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
       - BASIC_AUTH_PROXY_TIMEOUT=${BASIC_AUTH_PROXY_TIMEOUT}
     networks:
-      - airbyte_internal
-      - airbyte_public
+      airbyte_internal: # 172.16.2.x
+      airbyte_public: # 172.16.1.x
+        ipv4_address: 172.16.1.2
     depends_on:
       - webapp
       - server
 ##
-# my realisation
+# my bullsh*t
 ##
   # level of services
   nifi_docker:
@@ -286,6 +287,9 @@ services:
     - 8181:8181
     environment:
     - NIFI_WEB_HTTP_PORT=8181
+    networks:
+      app_network: # 172.16.3.x
+        ipv4_address: 172.16.3.2
   api_docker:
     build: 
       context: .
@@ -298,6 +302,9 @@ services:
     depends_on:
      - postgres_db
      - nifi_docker
+    networks:
+      app_network: # 172.16.3.x
+        ipv4_address: 172.16.3.3
   postgres_db:
     image: postgres:15-alpine
     container_name: postgres_db
@@ -310,24 +317,22 @@ services:
      - POSTGRES_PASSWORD=fastapi_server
      - POSTGRES_DB=postgres_db
     networks:
-     - app_network 
+      app_network: # 172.16.3.x
+        ipv4_address: 172.16.3.4
 
 ##
 #debezium
 ##
   # level of services
   zookeeper:
-    image: quay.io/debezium/zookeeper:2.4
     container_name: zookeeper
-    ports:
-      - "2181:2181"
-      - "2888:2888"
-      - "3888:3888"
+    image: quay.io/debezium/zookeeper:2.4
     networks:
-      - ui-network
+      debezium_network: # 172.16.4.x
+        ipv4_address: 172.16.4.2
   kafka:
-    image: quay.io/debezium/kafka:2.4
     container_name: kafka
+    image: quay.io/debezium/kafka:2.4
     ports:
       - "9092:9092"
     depends_on:
@@ -335,80 +340,40 @@ services:
     environment:
       - ZOOKEEPER_CONNECT=zookeeper:2181
     networks:
-      - ui-network
-# MySQL - для примера
-  mysql: # тут лежит база
-    image: quay.io/debezium/example-mysql:2.4
-    container_name: mysql
-    ports:
-      - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=debezium 
-      - MYSQL_USER=mysqluser
-      - MYSQL_PASSWORD=mysqlpw
-    networks:
-      - ui-network
-  mysqlterm: # тут подключаемся к базе
-    image: mysql:8.0
-    container_name: mysqlterm
-    depends_on:
-      - mysql
-    links:
-      - mysql:mysql
-    environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=True
-    networks:
-      - ui-network
-# Kafka connect: сюда регать коннекторы
+      debezium_network: # 172.16.4.x
+        ipv4_address: 172.16.4.3
   connect:
-    image: quay.io/debezium/connect:2.4
     container_name: connect
+    image: quay.io/debezium/connect:2.4
     ports:
       - "8083:8083"
     depends_on:
       - kafka
-      - mysql
-    links:
-      - kafka:kafka
-      - mysql:mysql
     environment:
-     - BOOTSTRAP_SERVERS=kafka:9092
-     - GROUP_ID=1
-     - CONFIG_STORAGE_TOPIC=my_connect_configs
-     - OFFSET_STORAGE_TOPIC=my_connect_offsets
-     - STATUS_STORAGE_TOPIC=my_source_connect_statuses
+      - BOOTSTRAP_SERVERS=kafka:9092
+      - GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=my_connect_configs
+      - OFFSET_STORAGE_TOPIC=my_connect_offsets
+      - STATUS_STORAGE_TOPIC=my_connect_statuses
+      - ENABLE_DEBEZIUM_KC_REST_EXTENSION=true
+      - ENABLE_DEBEZIUM_SCRIPTING=true
+      - CONNECT_REST_EXTENSION_CLASSES=io.debezium.kcrestextension.DebeziumConnectRestExtension
     networks:
-      - ui-network
-# kafka event listner
-  watcher:
-    image: quay.io/debezium/kafka:2.4
-    container_name: watcher
-    depends_on:
-      - zookeeper
-      - kafka
-    links:
-      - zookeeper:zookeeper
-      - kafka:kafka
-    command:  watch-topic -a -k dbserver1.inventory.customers
-    environment: 
-      - ZOOKEEPER_CONNECT=zookeeper:2181 #  этих ребят надо указывать явно
-      - KAFKA_BROKER=kafka:9092
-      - KAFKA_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-    networks:
-      - ui-network
-# UI
-  debezium-u1: # ложится на ubuntu 20.04 Причина в ddl
-    image: quay.io/debezium/debezium-ui:2.4
+      debezium_network: # 172.16.4.x
+        ipv4_address: 172.16.4.4
+  debezium-ui:
     container_name: debezium-ui
+    image: quay.io/debezium/debezium-ui:2.4
     ports:
       - "8080:8080"
+    environment:
+      - KAFKA_CONNECT_URIS=http://connect:8083
     depends_on:
       - connect
-    environment: 
-      - KAFKA_CONNECT_URIS=http://connect:8083
     networks:
-      - ui-network
+      debezium_network: # 172.16.4.x
+        ipv4_address: 172.16.4.5
+
 #####
 #END services 
 #####
@@ -428,7 +393,31 @@ configs:
   flags:
     file: ./flags.yml
 networks:
-  airbyte_public:
-  airbyte_internal:
-  app_network:
-  ui-network:
+  airbyte_public: # 172.16.1.x
+    driver: bridge
+    ipam:
+      config:
+        -
+          subnet: 172.16.1.0/24
+          gateway: 172.16.1.1
+  airbyte_internal: # 172.16.2.x
+    driver: bridge
+    ipam:
+      config:
+        -
+          subnet: 172.16.2.0/24
+          gateway: 172.16.2.1
+  app_network: # 172.16.3.x
+    driver: bridge
+    ipam:
+      config:
+        -
+          subnet: 172.16.3.0/24
+          gateway: 172.16.3.1
+  debezium_network: # 172.16.4.x
+    driver: bridge 
+    ipam:
+      config:
+        - 
+          subnet: 172.16.4.0/24
+          gateway: 172.16.4.1
