@@ -287,6 +287,13 @@ services:
     - 8181:8181
     environment:
     - NIFI_WEB_HTTP_PORT=8181
+    volumes:
+      - nifi_state:/opt/nifi/nifi-current/state
+      - nifi_db:/opt/nifi/nifi-current/database_repository
+      - nifi_flowfile:/opt/nifi/nifi-current/flowfile_repository
+      - nifi_content:/opt/nifi/nifi-current/content_repository
+      - nifi_provenance:/opt/nifi/nifi-current/provenance_repository 
+      - nifi_logs:/opt/nifi/nifi-current/logs  
     networks:
       app_network: # 172.16.3.x
         ipv4_address: 172.16.3.2
@@ -313,13 +320,26 @@ services:
     ports:
      - "5434:5432"
     environment:
-     - POSTGRES_USER=fastapi_server
-     - POSTGRES_PASSWORD=fastapi_server
-     - POSTGRES_DB=postgres_db
+       POSTGRES_USER: root
+       POSTGRES_PASSWORD: root
+       POSTGRES_DB: postgres_db
     networks:
       app_network: # 172.16.3.x
         ipv4_address: 172.16.3.4
-
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@terralink.fake
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      app_network: # 172.16.3.x
+        ipv4_address: 172.16.3.5
 ##
 #debezium
 ##
@@ -351,6 +371,11 @@ services:
   zookeeper:
     container_name: zookeeper
     image: quay.io/debezium/zookeeper:2.4
+    volumes:
+      - zookeeper_data:/zookeeper/data
+      - zookeeper_txns:/zookeeper/txns
+      - zookeeper_logs:/zookeeper/logs 
+      - zookeeper_conf:/zookeeper/conf
     networks:
       debezium_network: # 172.16.4.x
         ipv4_address: 172.16.4.2
@@ -363,6 +388,10 @@ services:
       - zookeeper
     environment:
       - ZOOKEEPER_CONNECT=zookeeper:2181
+    volumes:
+      - kafka_data:/kafka/data
+      - kafka_logs:/kafka/logs
+      - kafka_config:/kafka/config
     networks:
       debezium_network: # 172.16.4.x
         ipv4_address: 172.16.4.3
@@ -397,7 +426,48 @@ services:
     networks:
       debezium_network: # 172.16.4.x
         ipv4_address: 172.16.4.5
-
+  watcher:
+    image: quay.io/debezium/kafka:2.4
+    container_name: watcher
+    depends_on:
+      - zookeeper
+      - kafka
+    links:
+      - zookeeper:zookeeper
+      - kafka:kafka
+    command: watch-topic -a -k dbserver1.inventory.customers
+    environment: 
+      - ZOOKEEPER_CONNECT=zookeeper:2181 #  этих ребят надо указывать явно
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    networks:
+      debezium_network: # 172.16.4.x
+        ipv4_address: 172.16.4.6
+  mysql: # тут лежит база
+    image: quay.io/debezium/example-mysql:2.4
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=debezium 
+      - MYSQL_USER=mysqluser
+      - MYSQL_PASSWORD=mysqlpw
+    networks:
+      debezium_network: # 172.16.4.x
+        ipv4_address: 172.16.4.7
+  mysqlterm: # тут подключаемся к базе
+    image: mysql:8.0
+    container_name: mysqlterm
+    depends_on:
+      - mysql
+    links:
+      - mysql:mysql
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=True
+    networks:
+      debezium_network: # 172.16.4.x
+        ipv4_address: 172.16.4.8
 #####
 #END services 
 #####
@@ -412,7 +482,21 @@ volumes:
   db:
     name: ${DB_DOCKER_MOUNT}
   postgres_data:
+  pgadmin-data:
   api_data: 
+  nifi_state:
+  nifi_db:
+  nifi_flowfile:
+  nifi_content:
+  nifi_provenance:
+  zookeeper_data:
+  zookeeper_txns:
+  zookeeper_logs:
+  zookeeper_conf:
+  kafka_data:
+  kafka_logs:
+  kafka_config:
+  nifi_logs:
 configs:
   flags:
     file: ./flags.yml
