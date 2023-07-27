@@ -344,7 +344,7 @@ services:
 #debezium
 ##
   # level of services
-    zookeeper:
+  zookeeper:
     container_name: zookeeper
     image: quay.io/debezium/zookeeper:2.4
     volumes:
