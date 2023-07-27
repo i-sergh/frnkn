@@ -294,6 +294,7 @@ services:
       - nifi_content:/opt/nifi/nifi-current/content_repository
       - nifi_provenance:/opt/nifi/nifi-current/provenance_repository 
       - nifi_logs:/opt/nifi/nifi-current/logs  
+      - nifi_conf:/opt/nifi/nifi-current/conf 
     networks:
       app_network: # 172.16.3.x
         ipv4_address: 172.16.3.2
@@ -387,6 +388,10 @@ services:
       - ENABLE_DEBEZIUM_KC_REST_EXTENSION=true
       - ENABLE_DEBEZIUM_SCRIPTING=true
       - CONNECT_REST_EXTENSION_CLASSES=io.debezium.kcrestextension.DebeziumConnectRestExtension
+    volumes:
+      - kafka_connect_data:/kafka/data
+      - kafka_connect_logs:/kafka/logs
+      - kafka_connect_config:/kafka/config
     networks:
       debezium_network: # 172.16.4.x
         ipv4_address: 172.16.4.4
@@ -417,6 +422,10 @@ services:
       - KAFKA_BROKER=kafka:9092
       - KAFKA_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    volumes:
+      - kafka_data:/kafka/data
+      - kafka_logs:/kafka/logs
+      - kafka_config:/kafka/config
     networks:
       debezium_network: # 172.16.4.x
         ipv4_address: 172.16.4.6
@@ -429,21 +438,12 @@ services:
       - MYSQL_ROOT_PASSWORD=debezium 
       - MYSQL_USER=mysqluser
       - MYSQL_PASSWORD=mysqlpw
+    volumes:
+      - mysql_data:/var/lib/mysql
     networks:
       debezium_network: # 172.16.4.x
         ipv4_address: 172.16.4.7
-  mysqlterm: # тут подключаемся к базе
-    image: mysql:8.0
-    container_name: mysqlterm
-    depends_on:
-      - mysql
-    links:
-      - mysql:mysql
-    environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=True
-    networks:
-      debezium_network: # 172.16.4.x
-        ipv4_address: 172.16.4.8
+
 #####
 #END services 
 #####
@@ -473,6 +473,11 @@ volumes:
   kafka_logs:
   kafka_config:
   nifi_logs:
+  kafka_connect_logs:
+  kafka_connect_config:
+  mysql_data:
+  nifi_conf:
+  kafka_connect_data:
 configs:
   flags:
     file: ./flags.yml
