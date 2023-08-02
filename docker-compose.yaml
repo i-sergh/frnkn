@@ -341,6 +341,14 @@ services:
     networks:
       app_network: # 172.16.3.x
         ipv4_address: 172.16.3.5
+  jupyter:
+    image: jupyter/scipy-notebook:2023-07-25
+    container_name: jupyter
+    ports:
+      - 8888:8888
+    networks:
+      app_network: # 172.16.3.x
+        ipv4_address: 172.16.3.6
 ##
 #debezium
 ##
@@ -408,7 +416,10 @@ services:
       debezium_network: # 172.16.4.x
         ipv4_address: 172.16.4.5
   watcher:
-    image: quay.io/debezium/kafka:2.4
+    build: 
+      context: .
+      dockerfile: api_docker/watcher/Dockerfile 
+    #image: quay.io/debezium/kafka:2.4
     container_name: watcher
     depends_on:
       - zookeeper
@@ -423,6 +434,7 @@ services:
       - KAFKA_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
     volumes:
+      #- ./devv:/devv # development folder
       - kafka_data:/kafka/data
       - kafka_logs:/kafka/logs
       - kafka_config:/kafka/config
@@ -443,7 +455,24 @@ services:
     networks:
       debezium_network: # 172.16.4.x
         ipv4_address: 172.16.4.7
-
+  mysql-workbench:
+    image: lscr.io/linuxserver/mysql-workbench:latest
+    container_name: mysql-workbench
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - workbench_config:/config
+    ports:
+      - 3000:3000
+      - 3001:3001
+    cap_add:
+      - IPC_LOCK
+    restart: unless-stopped
+    networks:
+      debezium_network: # 172.16.4.x
+        ipv4_address: 172.16.4.8
 #####
 #END services 
 #####
@@ -478,6 +507,7 @@ volumes:
   mysql_data:
   nifi_conf:
   kafka_connect_data:
+  workbench_config:
 configs:
   flags:
     file: ./flags.yml
