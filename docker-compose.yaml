@@ -304,15 +304,21 @@ services:
       dockerfile: api_docker/Dockerfile 
     container_name: api_docker  
     volumes:    
-     - api_data:/app
+     #- api_data:/app
+     - ./api_docker/app/:/app
     ports:
      - 8778:80
     depends_on:
-     - postgres_db
-     - nifi_docker
+      - watcher
+    # - postgres_db
+    # - nifi_docker
+    links:
+      - watcher:watcher
     networks:
       app_network: # 172.16.3.x
         ipv4_address: 172.16.3.3
+      debezium_network: # 172.16.4.x
+        ipv4_address: 172.16.4.9
   postgres_db:
     image: postgres:15-alpine
     container_name: postgres_db
@@ -349,7 +355,8 @@ services:
     networks:
       app_network: # 172.16.3.x
         ipv4_address: 172.16.3.6
-##
+      
+##    
 #debezium
 ##
   # level of services
@@ -424,6 +431,9 @@ services:
     depends_on:
       - zookeeper
       - kafka
+    ports:
+        #8000 порт какого то хера занят
+      - "8668:8668"
     links:
       - zookeeper:zookeeper
       - kafka:kafka
@@ -434,10 +444,11 @@ services:
       - KAFKA_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
     volumes:
-      #- ./devv:/devv # development folder
-      - kafka_data:/kafka/data
-      - kafka_logs:/kafka/logs
-      - kafka_config:/kafka/config
+      - ./api_docker/devv:/devv
+      - watcher_kafka:/kafka
+      - watcher_kafka_data:/kafka/data
+      - watcher_kafka_logs:/kafka/logs
+      - watcher_kafka_config:/kafka/config
     networks:
       debezium_network: # 172.16.4.x
         ipv4_address: 172.16.4.6
@@ -508,6 +519,10 @@ volumes:
   nifi_conf:
   kafka_connect_data:
   workbench_config:
+  watcher_kafka:
+  watcher_kafka_data:
+  watcher_kafka_logs:
+  watcher_kafka_config:
 configs:
   flags:
     file: ./flags.yml
