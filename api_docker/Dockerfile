@@ -14,8 +14,10 @@ ENV PYTHONUNBUFFERED 1
 COPY api_docker/requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY api_docker/app /app 
+#COPY api_docker/app /app 
 
 WORKDIR /app/src
 
-CMD [ "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+
+CMD [ "uvicorn", "main:app",  "--host", "0.0.0.0", "--port", "80" ]
+#CMD ["python", "app/src/inf.py"] 
