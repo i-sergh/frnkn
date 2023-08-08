@@ -11,7 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # install dependencies
-COPY api_docker/requirements.txt .
+COPY DNA_files/requirements.txt .
 RUN pip install -r requirements.txt
 
 #COPY api_docker/app /app 
