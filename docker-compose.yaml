@@ -301,11 +301,11 @@ services:
   api_docker:
     build: 
       context: .
-      dockerfile: DNA_files/Dockerfile 
+      dockerfile: DNA_files/api/source/Dockerfile
     container_name: api_docker  
     volumes:    
      #- api_data:/app
-     - ./DNA_files/app/:/app
+     - ./DNA_files/api/app/:/app
     ports:
      - 8778:80
     depends_on:
@@ -425,7 +425,7 @@ services:
   watcher:
     build: 
       context: .
-      dockerfile: DNA_files/watcher/Dockerfile 
+      dockerfile: ./DNA_files/watcher/source/Dockerfile 
     #image: quay.io/debezium/kafka:2.4
     container_name: watcher
     depends_on:
@@ -444,7 +444,7 @@ services:
       - KAFKA_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
     volumes:
-      - ./DNA_files/devv:/devv
+      - ./DNA_files/watcer/devv:/devv
       - watcher_kafka:/kafka
       - watcher_kafka_data:/kafka/data
       - watcher_kafka_logs:/kafka/logs
